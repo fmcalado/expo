@@ -138,10 +138,13 @@ describe('NpmPackageManager', () => {
     afterEach(() => vol.reset());
 
     it('removes node_modules folder relative to cwd', async () => {
-      vol.fromJSON({
-        [path.join(projectRoot, 'package.json')]: '{}',
-        [path.join(projectRoot, 'node_modules/expo/package.json')]: '{}',
-      });
+      vol.fromJSON(
+        {
+          'package.json': '{}',
+          'node_modules/expo/package.json': '{}',
+        },
+        projectRoot
+      );
 
       const npm = new NpmPackageManager({ cwd: projectRoot });
       await npm.uninstallAsync();
@@ -209,9 +212,7 @@ describe('NpmPackageManager', () => {
     });
 
     it('installs multiple versioned dependencies by updating package.json', async () => {
-      vol.fromJSON({
-        [path.join(projectRoot, 'package.json')]: '{}',
-      });
+      vol.fromJSON({ 'package.json': '{}' }, projectRoot);
 
       const npm = new NpmPackageManager({ cwd: projectRoot });
       await npm.addAsync(['expo@^46', 'react-native@0.69.3']);
@@ -232,9 +233,7 @@ describe('NpmPackageManager', () => {
     });
 
     it('installs mixed dependencies with flags by updating package.json', async () => {
-      vol.fromJSON({
-        [path.join(projectRoot, 'package.json')]: '{}',
-      });
+      vol.fromJSON({ 'package.json': '{}' }, projectRoot);
 
       const npm = new NpmPackageManager({ cwd: projectRoot });
       await npm.addAsync(['expo@^46', 'react-native@0.69.3', 'jest', '--ignore-scripts']);
@@ -250,6 +249,27 @@ describe('NpmPackageManager', () => {
       expect(spawnAsync).toBeCalledWith(
         'npm',
         ['install', '--save', '--ignore-scripts', 'jest'],
+        expect.objectContaining({ cwd: projectRoot })
+      );
+    });
+
+    it('installs dist-tag versions with --save', async () => {
+      vol.fromJSON({ 'package.json': '{}' }, projectRoot);
+
+      const npm = new NpmPackageManager({ cwd: projectRoot });
+      await npm.addAsync(['react-native@0.69.3', 'expo@next']);
+
+      const packageFile = JSON.parse(
+        vol.readFileSync(path.join(projectRoot, 'package.json')).toString()
+      );
+
+      expect(packageFile).toHaveProperty(
+        'dependencies',
+        expect.objectContaining({ 'react-native': '0.69.3' })
+      );
+      expect(spawnAsync).toBeCalledWith(
+        'npm',
+        ['install', '--save', 'expo@next'],
         expect.objectContaining({ cwd: projectRoot })
       );
     });
@@ -298,9 +318,7 @@ describe('NpmPackageManager', () => {
     });
 
     it('installs multiple versioned dependencies by updating package.json', async () => {
-      vol.fromJSON({
-        [path.join(projectRoot, 'package.json')]: '{}',
-      });
+      vol.fromJSON({ 'package.json': '{}' }, projectRoot);
 
       const npm = new NpmPackageManager({ cwd: projectRoot });
       await npm.addDevAsync(['expo@^46', 'react-native@0.69.3']);
@@ -321,9 +339,7 @@ describe('NpmPackageManager', () => {
     });
 
     it('installs mixed dependencies with flags by updating package.json', async () => {
-      vol.fromJSON({
-        [path.join(projectRoot, 'package.json')]: '{}',
-      });
+      vol.fromJSON({ 'package.json': '{}' }, projectRoot);
 
       const npm = new NpmPackageManager({ cwd: projectRoot });
       await npm.addDevAsync(['expo@^46', 'react-native@0.69.3', 'jest', '--ignore-scripts']);
@@ -339,6 +355,27 @@ describe('NpmPackageManager', () => {
       expect(spawnAsync).toBeCalledWith(
         'npm',
         ['install', '--save-dev', '--ignore-scripts', 'jest'],
+        expect.objectContaining({ cwd: projectRoot })
+      );
+    });
+
+    it('installs dist-tag versions with --save', async () => {
+      vol.fromJSON({ 'package.json': '{}' }, projectRoot);
+
+      const npm = new NpmPackageManager({ cwd: projectRoot });
+      await npm.addDevAsync(['react-native@0.69.3', 'expo@next']);
+
+      const packageFile = JSON.parse(
+        vol.readFileSync(path.join(projectRoot, 'package.json')).toString()
+      );
+
+      expect(packageFile).toHaveProperty(
+        'devDependencies',
+        expect.objectContaining({ 'react-native': '0.69.3' })
+      );
+      expect(spawnAsync).toBeCalledWith(
+        'npm',
+        ['install', '--save-dev', 'expo@next'],
         expect.objectContaining({ cwd: projectRoot })
       );
     });
